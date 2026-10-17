@@ -1,6 +1,7 @@
 import type { Meta, Site } from './types'
 import { DEFAULT_WEIGHTS, WEIGHT_LABELS, scoreColor, scoreParts, type Weights } from './scoring'
 import { LAND_STATUS_ZH, UTILITIES } from './utilities'
+import { STATUS_ICON, checks } from './dd'
 
 export interface Filters {
   minHa: number
@@ -9,9 +10,10 @@ export interface Filters {
   utility: string
   onlyNew: boolean
   showOccupied: boolean
+  hideFailed: boolean
 }
 
-export const DEFAULT_FILTERS: Filters = { minHa: 3, minKv: 66, maxSubKm: 5, utility: '', onlyNew: false, showOccupied: false }
+export const DEFAULT_FILTERS: Filters = { minHa: 3, minKv: 66, maxSubKm: 5, utility: '', onlyNew: false, showOccupied: false, hideFailed: true }
 
 const km = (m: number) => (m < 1000 ? `${m} m` : `${(m / 1000).toFixed(1)} km`)
 const siteName = (s: Site) => s.name ?? `${LAND_STATUS_ZH[s.status]} ${s.ha}ha`
@@ -67,6 +69,9 @@ export function SiteList({ meta, ranked, total, filters, setFilters, weights, se
         <label className="check">
           <input type="checkbox" checked={filters.showOccupied} onChange={(e) => set('showOccupied', e.target.checked)} /> 也显示使用中的工厂/电厂
         </label>
+        <label className="check">
+          <input type="checkbox" checked={filters.hideFailed} onChange={(e) => set('hideFailed', e.target.checked)} /> 隐藏有否决项（❌）的地块
+        </label>
       </details>
 
       <details className="box">
@@ -89,7 +94,7 @@ export function SiteList({ meta, ranked, total, filters, setFilters, weights, se
             <button onClick={() => onSelect(site.id)}>
               <span className="score" style={{ background: scoreColor(score) }}>{score}</span>
               <span className="grow">
-                <span className="title">{siteName(site)}{isNew(site) && <span className="badge">新</span>}</span>
+                <span className="title">{siteName(site)}{isNew(site) && <span className="badge">新</span>}{site.vision?.occupancy === 'empty' && <span className="badge ok">AI 确认空地</span>}</span>
                 <span className="muted small">
                   {site.ha} ha · {LAND_STATUS_ZH[site.status]} · {site.sub ? `${site.sub.kv}kV ${km(site.sub.m)}` : '附近无已知变电站'}
                   {site.utility && ` · ${UTILITIES[site.utility]?.zh}`}
@@ -134,6 +139,16 @@ export function SiteDetail({ site, score, weights, onBack, onReport }: DetailPro
           <tr><th>可租/可买</th><td className="warn">待确认（公开数据中没有买卖信息）</td></tr>
         </tbody>
       </table>
+      <h3>尽职调查（DD）自动检查</h3>
+      <ul className="checks">
+        {checks(site).map((c) => (
+          <li key={c.key} className={c.status}>
+            <span className="icon">{STATUS_ICON[c.status]}</span>
+            <span><b>{c.label}</b><br /><span className="muted small">{c.detail}</span></span>
+          </li>
+        ))}
+      </ul>
+      <p className="muted small">⚪ = 数据还没接入或还没检查。</p>
       <h3>评分构成</h3>
       <ul className="parts">
         {(Object.keys(parts) as (keyof Weights)[]).map((k) => (

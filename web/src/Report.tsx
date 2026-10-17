@@ -3,6 +3,13 @@ import { Map as MlMap } from 'maplibre-gl'
 import type { Site } from './types'
 import { suggestedVoltage } from './scoring'
 import { LAND_STATUS_JA, UTILITIES } from './utilities'
+import { STATUS_ICON, checks } from './dd'
+
+const CHECK_JA: Record<string, string> = {
+  grid: '系統接続（最寄り変電所）', vacant: '現況の建物（建物データ）', cover: '土地被覆（衛星画像分類）', vision: '航空写真の AI 判読',
+  slope: '地形・傾斜', homes: '住宅との離隔', flood: '洪水浸水想定', tsunami: '津波浸水想定', landslide: '土砂災害警戒区域',
+}
+const STATUS_JA = { pass: '適', warn: '要確認', fail: '不適', unknown: '未確認' }
 import { load, save } from './storage'
 
 interface Applicant {
@@ -112,7 +119,17 @@ export default function Report({ site, onClose }: { site: Site; onClose: () => v
           </tbody>
         </table>
 
-        <h2>5. 申込前の確認事項</h2>
+        <h2>5. 立地スクリーニング結果（公開データによる自動判定）</h2>
+        <table>
+          <tbody>
+            {checks(site).map((c) => (
+              <tr key={c.key}><th>{CHECK_JA[c.key] ?? c.label}</th><td>{STATUS_ICON[c.status]} {STATUS_JA[c.status]}</td></tr>
+            ))}
+          </tbody>
+        </table>
+        {site.vision && <p className="caption">航空写真判読（{site.vision.at}）：{site.vision.note}</p>}
+
+        <h2>6. 申込前の確認事項</h2>
         <ul className="checklist">
           <li>☐ {utility?.ja ?? '一般送配電事業者'}の空き容量マップで、最寄り変電所・送電線の空き容量を確認</li>
           <li>☐ 法務局で登記簿謄本・公図を取得し、所有者と地目を確認（売買／賃貸の可否）</li>
@@ -121,7 +138,7 @@ export default function Report({ site, onClose }: { site: Site; onClose: () => v
           <li>☐ 通信（光ファイバー）・用水・排熱の条件確認</li>
         </ul>
 
-        <h2>6. 接続検討申込の主な提出書類（一般例）</h2>
+        <h2>7. 接続検討申込の主な提出書類（一般例）</h2>
         <ul className="checklist">
           <li>☐ 接続検討申込書（事業者指定様式）</li>
           <li>☐ 位置図・配置図</li>

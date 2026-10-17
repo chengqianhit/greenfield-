@@ -1,4 +1,5 @@
 import type { Site } from './types'
+import { checks, ddFactor } from './dd'
 
 export interface Weights {
   substation: number
@@ -44,7 +45,7 @@ export function score(site: Site, w: Weights): number {
   const total = w.substation + w.line + w.area + w.landType
   if (total === 0) return 0
   const sum = (Object.keys(parts) as (keyof Weights)[]).reduce((s, k) => s + parts[k] * w[k], 0)
-  return Math.round((100 * sum) / total)
+  return Math.round(((100 * sum) / total) * ddFactor(checks(site)))
 }
 
 // Rough receiving voltage for a given AIDC load in Japan.

@@ -119,3 +119,8 @@
   .report input, .report textarea { background: none; border: none; }
   .report-map { break-inside: avoid; }
 }
+
+.badge.ok { background: #16a34a; }
+.checks { list-style: none; padding: 0; margin: 0; font-size: 14px; }
+.checks li { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+.checks .icon { flex: none; }

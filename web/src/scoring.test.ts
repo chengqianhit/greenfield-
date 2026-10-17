@@ -22,6 +22,11 @@ describe('score', () => {
   it('ranks running plants far below former sites', () => {
     expect(score(site({ status: 'occupied' }), DEFAULT_WEIGHTS)).toBeLessThan(score(site(), DEFAULT_WEIGHTS) - 10)
   })
+  it('is cut by failed due-diligence checks', () => {
+    const built = site({ dd: { builtPct: 60 }, vision: undefined })
+    expect(score(built, DEFAULT_WEIGHTS)).toBe(60)
+    expect(score(site({ dd: { builtPct: 10 } }), DEFAULT_WEIGHTS)).toBe(90)
+  })
   it('respects weights', () => {
     const noGrid = site({ sub: null, line: null })
     expect(score(noGrid, { substation: 0, line: 0, area: 1, landType: 1 })).toBe(100)

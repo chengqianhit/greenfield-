@@ -36,15 +36,26 @@ jobs:
           osmium export filtered.osm.pbf -f geojsonseq -u type_id -o features.geojsonseq --overwrite
           ls -lh filtered.osm.pbf features.geojsonseq
       - name: Test scanner
-        run: npm test
+        run: npm ci && npm test
         working-directory: pipeline
       - name: Analyse sites
         run: node pipeline/scan.mjs features.geojsonseq "web/public/data/$REGION" "$REGION" && ls -lh "web/public/data/$REGION"
+      - name: Check buildings on and around each site
+        run: |
+          osmium tags-filter region.osm.pbf w/building -o buildings.osm.pbf --overwrite
+          osmium export buildings.osm.pbf -f geojsonseq --geometry-types=polygon -o - \
+            | node pipeline/buildings.mjs "web/public/data/$REGION/sites.json"
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
+      - name: Read aerial photos with Claude (needs ANTHROPIC_API_KEY secret)
+        run: node pipeline/vision.mjs "web/public/data/$REGION/sites.json" "pipeline/cache/$REGION/vision.json" 150
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       - name: Commit data
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "web/public/data/$REGION"
+          git add "web/public/data/$REGION" "pipeline/cache/$REGION"
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git commit -m "Scan $REGION sites $(date -u +%Y-%m-%d)"
           git push

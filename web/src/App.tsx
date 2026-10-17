@@ -4,6 +4,7 @@ import MapView, { type Basemap } from './MapView'
 import Report from './Report'
 import { DEFAULT_FILTERS, SiteDetail, SiteList, type Filters } from './SitePanel'
 import { DEFAULT_WEIGHTS, score, type Weights } from './scoring'
+import { checks } from './dd'
 import { load, save } from './storage'
 import type { Meta, Site, Substation } from './types'
 
@@ -71,6 +72,7 @@ function App() {
           s.sub.m <= filters.maxSubKm * 1000 &&
           (s.sub.kv ?? 0) >= filters.minKv &&
           (filters.showOccupied || s.status !== 'occupied') &&
+          (!filters.hideFailed || !checks(s).some((c) => c.status === 'fail')) &&
           (!filters.utility || s.utility === filters.utility) &&
           (!filters.onlyNew || isNew(s)),
       ),

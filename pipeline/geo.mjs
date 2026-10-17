@@ -59,14 +59,16 @@ export function centroid(geom) {
     return c[Math.floor(c.length / 2)]
   }
   const ring = rings.reduce((a, b) => (ringArea(b) > ringArea(a) ? b : a))
+  // Work relative to the first vertex to avoid precision loss at large lon/lat.
+  const [ox, oy] = ring[0]
   let a = 0, cx = 0, cy = 0
   for (let i = 0; i < ring.length - 1; i++) {
-    const [x1, y1] = ring[i], [x2, y2] = ring[i + 1]
+    const x1 = ring[i][0] - ox, y1 = ring[i][1] - oy, x2 = ring[i + 1][0] - ox, y2 = ring[i + 1][1] - oy
     const f = x1 * y2 - x2 * y1
     a += f; cx += (x1 + x2) * f; cy += (y1 + y2) * f
   }
   if (a === 0) return ring[0]
-  return [cx / (3 * a), cy / (3 * a)]
+  return [ox + cx / (3 * a), oy + cy / (3 * a)]
 }
 
 // Douglas–Peucker on a coordinate list, tolerance in degrees.

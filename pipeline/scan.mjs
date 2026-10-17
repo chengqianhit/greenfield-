@@ -33,7 +33,7 @@ export const UTILITIES = [
 // What the land is likely used for today, from OSM tags and the name.
 // Only `occupied` (a running factory or plant) is a poor candidate.
 const FORMER = /跡地|跡$|閉鎖|廃止|解体/
-const PARK = /団地|工業用地|産業用地|分譲|流通センター|臨海|埋立|(テクノ|リサーチ|ビジネス|インダストリアル|サイエンス)パーク/
+const PARK = /団地|工業用地|産業用地|分譲|流通センター|臨海|埋立|(テクノ|リサーチ|ビジネス|インダストリアル|サイエンス)パーク|industrial (park|estate)/i
 // Never suitable, whatever the land is tagged as.
 const EXCLUDED = /原子力|原発|核燃料|放射性/
 // Public or in-use land that is not for sale unless it is a former (跡地) site.

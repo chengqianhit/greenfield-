@@ -56,6 +56,9 @@ test('land status', () => {
   assert.equal(landStatus('industrial', { power: 'plant' }), 'occupied')
   assert.equal(landStatus('industrial', {}), 'unknown')
   assert.equal(landStatus('greenfield', { name: 'x' }), 'vacant')
+  assert.equal(landStatus('greenfield', { name: '狭山ゴルフ・クラブ' }), 'occupied')
+  assert.equal(landStatus('greenfield', { name: '秋ヶ瀬公園' }), 'occupied')
+  assert.equal(landStatus('brownfield', { name: '〇〇ゴルフ場跡地' }), 'former')
 })
 
 test('analyse keeps only large sites near the grid', async () => {

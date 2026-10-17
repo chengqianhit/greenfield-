@@ -36,6 +36,8 @@ const FORMER = /跡地|跡$|閉鎖|廃止|解体/
 const PARK = /団地|工業用地|産業用地|分譲|流通センター|臨海|埋立|(テクノ|リサーチ|ビジネス|インダストリアル|サイエンス)パーク/
 // Never suitable, whatever the land is tagged as.
 const EXCLUDED = /原子力|原発|核燃料|放射性/
+// Public or in-use land that is not for sale unless it is a former (跡地) site.
+const IN_USE = /公園|緑地|墓地|霊園|神社|寺院|教会|学校|大学|病院|ゴルフ|運動場|競技場|グラウンド|スポーツ|golf/i
 const OCCUPIED = /発電所|原子力|製鉄|製油|精油|コンビナート|工場|製作所|試験場|研究所|変電所|基地|処理場|処分場|清掃|浄水|事業所|製造所|株式会社|㈱|\(株\)/
 const OCCUPIED_TAGS = ['power', 'industrial', 'operator', 'man_made']
 
@@ -43,6 +45,7 @@ export function landStatus(type, tags) {
   const name = tags.name ?? tags['name:ja'] ?? ''
   if (EXCLUDED.test(name)) return 'occupied'
   if (type === 'brownfield' || FORMER.test(name) || tags.disused || tags.abandoned) return 'former'
+  if (IN_USE.test(name) || tags.leisure) return 'occupied'
   if (type === 'greenfield') return 'vacant'
   if (PARK.test(name) && !OCCUPIED.test(name)) return 'park'
   if (name || OCCUPIED_TAGS.some((t) => tags[t])) return 'occupied'

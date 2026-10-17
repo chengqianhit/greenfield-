@@ -1,4 +1,4 @@
-import type { Site } from './types'
+import type { DepthClass, Site } from './types'
 
 export type CheckStatus = 'pass' | 'warn' | 'fail' | 'unknown'
 
@@ -8,6 +8,9 @@ export interface Check {
   status: CheckStatus
   detail: string
 }
+
+// ≥3 m floods the ground floor and electrical rooms of a typical DC: hard to justify.
+const DEPTH_STATUS: Record<DepthClass, CheckStatus> = { '<0.5': 'warn', '0.5-3': 'warn', '3-5': 'fail', '5-10': 'fail', '10-20': 'fail', '20+': 'fail' }
 
 const m = (v: number) => (v < 1000 ? `${Math.round(v)} m` : `${(v / 1000).toFixed(1)} km`)
 
@@ -40,8 +43,9 @@ export function checks(site: Site): Check[] {
     out.push({
       key: 'cover',
       label: '卫星影像地表分类',
-      status: grade(dd.coverBuiltPct, 10, 30),
-      detail: `建成区 ${dd.coverBuiltPct}%，林地 ${dd.coverTreePct ?? 0}%（ESA WorldCover）`,
+      // Built-up here includes paved ground and cleared plant slabs, so it only warns.
+      status: dd.coverBuiltPct >= 10 ? 'warn' : 'pass',
+      detail: `建成区/铺装 ${dd.coverBuiltPct}%，林地 ${dd.coverTreePct ?? 0}%，农田 ${dd.coverCropPct ?? 0}%，草地/裸地 ${dd.coverOpenPct ?? 0}%（ESA WorldCover 2021，仅供参考）`,
     })
 
   if (v)
@@ -53,7 +57,7 @@ export function checks(site: Site): Check[] {
     })
 
   const slopeStatus: CheckStatus =
-    dd.slopePct !== undefined ? grade(dd.slopePct, 5, 10) : v ? (v.terrain === 'flat' ? 'pass' : v.terrain === 'gentle_slope' ? 'warn' : 'fail') : 'unknown'
+    dd.slopePct !== undefined ? ((dd.steepPct ?? 0) >= 30 ? 'fail' : grade(dd.slopePct, 5, 15)) : v ? (v.terrain === 'flat' ? 'pass' : v.terrain === 'gentle_slope' ? 'warn' : 'fail') : 'unknown'
   out.push({
     key: 'slope',
     label: '坡度',
@@ -71,16 +75,16 @@ export function checks(site: Site): Check[] {
   out.push({
     key: 'flood',
     label: '洪水浸水',
-    status: dd.floodM === undefined ? 'unknown' : dd.floodM === null ? 'pass' : grade(dd.floodM, 0.01, 3),
-    detail: dd.floodM === undefined ? '未检查' : dd.floodM === null ? '不在想定浸水区域' : `想定最大浸水深 ${dd.floodM} m`,
+    status: dd.flood === undefined ? 'unknown' : dd.flood === null ? 'pass' : DEPTH_STATUS[dd.flood],
+    detail: dd.flood === undefined ? '未检查' : dd.flood === null ? '不在想定浸水区域（想定最大规模）' : `想定最大浸水深 ${dd.flood} m`,
   })
 
-  if (dd.tsunamiM !== undefined)
+  if (dd.tsunami !== undefined)
     out.push({
       key: 'tsunami',
       label: '海啸浸水',
-      status: dd.tsunamiM === null ? 'pass' : grade(dd.tsunamiM, 0.01, 2),
-      detail: dd.tsunamiM === null ? '不在想定浸水区域' : `想定浸水深 ${dd.tsunamiM} m`,
+      status: dd.tsunami === null ? 'pass' : dd.tsunami === '<0.5' ? 'warn' : 'fail',
+      detail: dd.tsunami === null ? '不在想定浸水区域' : `想定浸水深 ${dd.tsunami} m`,
     })
 
   out.push({

@@ -30,12 +30,16 @@ export interface DueDiligence {
   nearestHomeM?: number | null
   slopePct?: number // mean slope, %
   steepPct?: number // share of the site steeper than 15 %, %
-  floodM?: number | null // max expected flood depth (想定最大規模), m
-  tsunamiM?: number | null
+  flood?: DepthClass | null // worst 想定最大規模 flood depth class on the site; null = outside mapped zones
+  tsunami?: DepthClass | null
   landslide?: 'none' | 'warning' | 'special'
   coverBuiltPct?: number // ESA WorldCover built-up share, %
   coverTreePct?: number
+  coverCropPct?: number
+  coverOpenPct?: number
 }
+
+export type DepthClass = '<0.5' | '0.5-3' | '3-5' | '5-10' | '10-20' | '20+'
 
 export interface Vision {
   occupancy: 'empty' | 'partly_built' | 'built'

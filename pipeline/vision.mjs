@@ -110,10 +110,14 @@ export async function judge(client, image) {
   return { ...res.parsed_output, model: res.model }
 }
 
+// Hazards that rule a site out regardless of what the photo shows.
+const hazardFail = (dd) =>
+  ['3-5', '5-10', '10-20', '20+'].includes(dd.flood) || (dd.tsunami && dd.tsunami !== '<0.5') || dd.landslide === 'special' || (dd.steepPct ?? 0) >= 30
+
 // Sites worth a look: not a running plant, mostly unbuilt per OSM, near a known grid substation.
 export function shortlist(sites) {
   return sites
-    .filter((s) => s.status !== 'occupied' && s.sub && s.sub.m <= 5000 && (s.dd?.builtPct ?? 0) < 30)
+    .filter((s) => s.status !== 'occupied' && s.sub && s.sub.m <= 5000 && (s.dd?.builtPct ?? 0) < 30 && !hazardFail(s.dd ?? {}))
     .map((s) => ({ s, rank: (s.sub.kv >= 275 ? 3 : s.sub.kv >= 154 ? 2 : 1) * 10_000 - s.sub.m + Math.min(s.ha, 50) * 50 }))
     .sort((a, b) => b.rank - a.rank)
     .map((x) => x.s)

@@ -20,6 +20,7 @@ test('shortlist skips occupied and built-up sites and prefers high voltage', () 
     { ...base, id: 'c', sub: { kv: 500, m: 100 }, status: 'occupied' },
     { ...base, id: 'd', sub: { kv: 500, m: 100 }, dd: { builtPct: 60 } },
     { ...base, id: 'e', sub: null },
+    { ...base, id: 'f', sub: { kv: 500, m: 100 }, dd: { builtPct: 0, flood: '5-10' } },
   ]
   assert.deepEqual(shortlist(sites).map((s) => s.id), ['b', 'a'])
 })

@@ -47,6 +47,8 @@ jobs:
             | node pipeline/buildings.mjs "web/public/data/$REGION/sites.json"
         env:
           NODE_OPTIONS: --max-old-space-size=8192
+      - name: Check hazards, slope and land cover
+        run: node pipeline/hazards.mjs "web/public/data/$REGION/sites.json" "pipeline/cache/$REGION/hazards.json"
       - name: Read aerial photos with Claude (needs ANTHROPIC_API_KEY secret)
         run: node pipeline/vision.mjs "web/public/data/$REGION/sites.json" "pipeline/cache/$REGION/vision.json" 150
         env:

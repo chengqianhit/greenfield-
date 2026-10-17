@@ -1,21 +1,35 @@
 :root {
   --bg: #ffffff;
+  --panel: rgba(255, 255, 255, 0.96);
   --text: #111827;
   --muted: #6b7280;
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+  --line: #e5e7eb;
+  --accent: #4f46e5;
+  --warn: #b45309;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans', 'Helvetica Neue', sans-serif;
   color-scheme: light dark;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #111827;
-    --text: #f9fafb;
+    --bg: #0f172a;
+    --panel: rgba(17, 24, 39, 0.96);
+    --text: #f3f4f6;
     --muted: #9ca3af;
+    --line: #374151;
+    --accent: #818cf8;
+    --warn: #fbbf24;
   }
 }
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
 
 body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
 }
+
+button, select, input, textarea { font: inherit; color: inherit; }

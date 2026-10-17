@@ -35,6 +35,7 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
+      - run: npx vitest run
       - run: npm run build
         env:
           BASE_PATH: /${{ github.event.repository.name }}/

@@ -4,7 +4,7 @@ import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { execFileSync } from 'node:child_process'
-import { analyse, maxVoltageKv, readFeatures, utilityOf } from '../scan.mjs'
+import { analyse, landStatus, maxVoltageKv, readFeatures, utilityOf } from '../scan.mjs'
 import { haversine, polygonArea, pointSegmentDistance } from '../geo.mjs'
 
 const box = (x, y, w, h) => ({ type: 'Polygon', coordinates: [[[x, y], [x + w, y], [x + w, y + h], [x, y + h], [x, y]]] })
@@ -19,6 +19,7 @@ const FIXTURE = [
   feat('w5', { landuse: 'industrial', name: 'テスト工業団地' }, box(140.003, 35.701, 0.0025, 0.002)), // ~5 ha, near
   feat('w6', { landuse: 'brownfield' }, box(140.01, 35.71, 0.0005, 0.0005)), // too small
   feat('w7', { landuse: 'greenfield' }, box(141.5, 36.5, 0.003, 0.003)), // far from grid
+  feat('n9', { power: 'substation', name: '電圧不明変電所' }, { type: 'Point', coordinates: [140.0055, 35.7015] }),
   feat('w8', { landuse: 'residential' }, box(140.003, 35.705, 0.003, 0.003)), // wrong type
 ].join('\n')
 
@@ -44,15 +45,28 @@ test('voltage and utility parsing', () => {
   assert.equal(utilityOf('someone'), null)
 })
 
+test('land status', () => {
+  assert.equal(landStatus('brownfield', {}), 'former')
+  assert.equal(landStatus('industrial', { name: '海南火力発電所跡地' }), 'former')
+  assert.equal(landStatus('industrial', { name: '旧福島第一原子力発電所' }), 'occupied')
+  assert.equal(landStatus('industrial', { name: 'JFEスチール' }), 'occupied')
+  assert.equal(landStatus('industrial', { name: '〇〇工業団地' }), 'park')
+  assert.equal(landStatus('industrial', { power: 'plant' }), 'occupied')
+  assert.equal(landStatus('industrial', {}), 'unknown')
+  assert.equal(landStatus('greenfield', { name: 'x' }), 'vacant')
+})
+
 test('analyse keeps only large sites near the grid', async () => {
   const { path } = fixtureFile()
   const data = await readFeatures(path)
-  assert.equal(data.subs.length, 1, 'traction substation excluded')
+  assert.equal(data.subs.length, 2, 'traction substation excluded')
   assert.equal(data.lines.length, 1, 'distribution line excluded')
   const sites = analyse(data, new Map([['w5', '2026-01-01']]), '2026-10-17')
   assert.deepEqual(sites.map((s) => s.id), ['w5'])
   const [s] = sites
   assert.equal(s.name, 'テスト工業団地')
+  assert.equal(s.status, 'park')
+  assert.equal(s.subUnknown.name, '電圧不明変電所', 'closer unknown-voltage substation reported')
   assert.equal(s.sub.kv, 275)
   assert.ok(s.sub.m > 200 && s.sub.m < 400, `sub distance ${s.sub.m}`)
   assert.equal(s.line.kv, 275)

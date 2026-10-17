@@ -30,6 +30,22 @@ export const UTILITIES = [
   ['okinawa', /沖縄電力|okinawa/i],
 ]
 
+// What the land is likely used for today, from OSM tags and the name.
+// Only `occupied` (a running factory or plant) is a poor candidate.
+const FORMER = /跡地|跡$|閉鎖|廃止|解体/
+const PARK = /団地|工業用地|産業用地|分譲|テクノ|パーク|ビジネス|流通|インダストリ|臨海|埋立/
+const OCCUPIED = /発電所|原子力|製鉄|製油|精油|コンビナート|工場|製作所|試験場|研究所|変電所|基地|処理場|処分場|清掃|浄水|事業所|製造所|株式会社|㈱|\(株\)/
+const OCCUPIED_TAGS = ['power', 'industrial', 'operator', 'man_made']
+
+export function landStatus(type, tags) {
+  const name = tags.name ?? tags['name:ja'] ?? ''
+  if (type === 'brownfield' || FORMER.test(name) || tags.disused || tags.abandoned) return 'former'
+  if (type === 'greenfield') return 'vacant'
+  if (PARK.test(name) && !OCCUPIED.test(name)) return 'park'
+  if (name || OCCUPIED_TAGS.some((t) => tags[t])) return 'occupied'
+  return 'unknown'
+}
+
 export function utilityOf(operator) {
   if (!operator) return null
   return UTILITIES.find(([, re]) => re.test(operator))?.[0] ?? null
@@ -62,7 +78,7 @@ export async function readFeatures(path) {
       const kv = maxVoltageKv(p.voltage)
       if (kv !== null && kv >= MIN_GRID_KV) lines.push({ id, kv, name: p.name ?? null, coords: g.coordinates })
     } else if (LAND_TYPES.has(p.landuse) && (g.type === 'Polygon' || g.type === 'MultiPolygon')) {
-      lands.push({ id, type: p.landuse, name: p.name ?? p['name:ja'] ?? null, geom: g })
+      lands.push({ id, type: p.landuse, status: landStatus(p.landuse, p), name: p.name ?? p['name:ja'] ?? null, geom: g })
     }
   }
   return { subs: [...subs.values()], lines, lands }
@@ -80,9 +96,10 @@ function samplePoints(geom, c, n = 120) {
 const DEG = SEARCH_M / 111_000 // search radius in degrees of latitude
 
 export function analyse({ subs, lines, lands }, previous = new Map(), today = new Date().toISOString().slice(0, 10)) {
-  const gridSubs = subs.filter((s) => s.kv === null || s.kv >= MIN_GRID_KV)
   const subIndex = new GridIndex()
-  for (const s of gridSubs) subIndex.insertBox(s.lon, s.lat, s.lon, s.lat, s)
+  for (const s of subs) if (s.kv !== null && s.kv >= MIN_GRID_KV) subIndex.insertBox(s.lon, s.lat, s.lon, s.lat, s)
+  const unknownIndex = new GridIndex()
+  for (const s of subs) if (s.kv === null) unknownIndex.insertBox(s.lon, s.lat, s.lon, s.lat, s)
   const opIndex = new GridIndex(0.25)
   for (const s of subs) if (utilityOf(s.operator)) opIndex.insertBox(s.lon, s.lat, s.lon, s.lat, s)
 
@@ -103,13 +120,18 @@ export function analyse({ subs, lines, lands }, previous = new Map(), today = ne
     const pts = samplePoints(land.geom, c)
     const lonDeg = DEG / Math.cos((c[1] * Math.PI) / 180)
 
-    let sub = null, subM = Infinity
-    for (const s of subIndex.near(c, lonDeg + 0.02)) {
-      for (const p of pts) {
-        const d = haversine(p, [s.lon, s.lat])
-        if (d < subM) { subM = d; sub = s }
+    const nearest = (index) => {
+      let best = null, bestM = Infinity
+      for (const s of index.near(c, lonDeg + 0.02)) {
+        for (const p of pts) {
+          const d = haversine(p, [s.lon, s.lat])
+          if (d < bestM) { bestM = d; best = s }
+        }
       }
+      return [best, bestM]
     }
+    const [sub, subM] = nearest(subIndex)
+    const [unk, unkM] = nearest(unknownIndex)
     let line = null, lineM = Infinity
     for (const seg of segIndex.near(c, lonDeg + 0.02)) {
       for (const p of pts) {
@@ -117,7 +139,7 @@ export function analyse({ subs, lines, lands }, previous = new Map(), today = ne
         if (d < lineM) { lineM = d; line = seg.line }
       }
     }
-    if (subM > SEARCH_M && lineM > SEARCH_M) continue
+    if (subM > SEARCH_M && lineM > SEARCH_M && unkM > SEARCH_M) continue
 
     let utility = utilityOf(sub?.operator), opM = Infinity
     if (!utility) {
@@ -132,10 +154,13 @@ export function analyse({ subs, lines, lands }, previous = new Map(), today = ne
       id: land.id,
       name: land.name,
       type: land.type,
+      status: land.status,
       ha: Math.round(ha * 10) / 10,
       lon: round(c)[0],
       lat: round(c)[1],
       sub: sub && subM <= SEARCH_M ? { id: sub.id, name: sub.name, kv: sub.kv, m: Math.round(subM) } : null,
+      // A closer substation whose voltage OSM does not record; worth checking by hand.
+      subUnknown: unk && unkM < subM && unkM <= SEARCH_M ? { id: unk.id, name: unk.name, m: Math.round(unkM) } : null,
       line: line && lineM <= SEARCH_M ? { kv: line.kv, name: line.name, m: Math.round(lineM) } : null,
       utility,
       firstSeen: previous.get(land.id) ?? today,

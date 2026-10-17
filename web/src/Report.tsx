@@ -6,7 +6,7 @@ import { LAND_STATUS_JA, UTILITIES } from './utilities'
 import { STATUS_ICON, checks } from './dd'
 
 const CHECK_JA: Record<string, string> = {
-  grid: '系統接続（最寄り変電所）', vacant: '現況の建物（建物データ）', cover: '土地被覆（衛星画像分類）', vision: '航空写真の AI 判読',
+  grid: '系統接続（最寄り変電所）', farmland: '農地（衛星画像からの推定）', vacant: '現況の建物（建物データ）', cover: '土地被覆（衛星画像分類）', vision: '航空写真の AI 判読',
   slope: '地形・傾斜', homes: '住宅との離隔', flood: '洪水浸水想定', tsunami: '津波浸水想定', landslide: '土砂災害警戒区域',
 }
 const STATUS_JA = { pass: '適', warn: '要確認', fail: '不適', unknown: '未確認' }

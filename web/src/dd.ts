@@ -48,6 +48,14 @@ export function checks(site: Site): Check[] {
       detail: `建成区/铺装 ${dd.coverBuiltPct}%，林地 ${dd.coverTreePct ?? 0}%，农田 ${dd.coverCropPct ?? 0}%，草地/裸地 ${dd.coverOpenPct ?? 0}%（ESA WorldCover 2021，仅供参考）`,
     })
 
+  if (dd.coverCropPct !== undefined)
+    out.push({
+      key: 'farmland',
+      label: '农地',
+      status: dd.coverCropPct >= 30 ? 'warn' : 'pass',
+      detail: dd.coverCropPct >= 30 ? `卫星影像显示约 ${dd.coverCropPct}% 为农田：若属农地需农地转用许可，农用地区域内原则上不可转用` : '卫星影像未见大面积农田',
+    })
+
   if (v)
     out.push({
       key: 'vision',

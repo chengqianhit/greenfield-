@@ -1,0 +1,10 @@
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: calc(48px + env(safe-area-inset-top)) 16px 48px;
+  text-align: center;
+}
+
+.hint {
+  color: var(--muted);
+}

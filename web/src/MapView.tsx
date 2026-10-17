@@ -121,20 +121,20 @@ export default function MapView({ sites, scores, substations, linesUrl, selected
       paint: { 'line-color': KV_COLOR as never, 'line-width': ['interpolate', ['linear'], ['zoom'], 5, 0.6, 12, 2.5], 'line-opacity': 0.85 },
     })
     map.addLayer({
-      id: 'subs', type: 'circle', source: 'subs', layout: { visibility: gridVis },
-      paint: {
-        'circle-color': KV_COLOR as never,
-        'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 2, 12, 6],
-        'circle-stroke-color': '#fff', 'circle-stroke-width': 1,
-      },
-    })
-    map.addLayer({
       id: 'sites-fill', type: 'fill', source: 'sites', minzoom: 10,
       paint: { 'fill-color': ['get', 'color'], 'fill-opacity': ['case', ['get', 'selected'], 0.55, 0.35] },
     })
     map.addLayer({
       id: 'sites-line', type: 'line', source: 'sites', minzoom: 10,
       paint: { 'line-color': ['case', ['get', 'selected'], '#ffffff', ['get', 'color']], 'line-width': ['case', ['get', 'selected'], 3, 1.5] },
+    })
+    map.addLayer({
+      id: 'subs', type: 'circle', source: 'subs', layout: { visibility: gridVis },
+      paint: {
+        'circle-color': KV_COLOR as never,
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 5, 2, 12, 6],
+        'circle-stroke-color': '#fff', 'circle-stroke-width': 1,
+      },
     })
     map.addLayer({
       id: 'site-points', type: 'circle', source: 'site-points', maxzoom: 12,

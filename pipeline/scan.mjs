@@ -33,12 +33,15 @@ export const UTILITIES = [
 // What the land is likely used for today, from OSM tags and the name.
 // Only `occupied` (a running factory or plant) is a poor candidate.
 const FORMER = /跡地|跡$|閉鎖|廃止|解体/
-const PARK = /団地|工業用地|産業用地|分譲|テクノ|パーク|ビジネス|流通|インダストリ|臨海|埋立/
+const PARK = /団地|工業用地|産業用地|分譲|流通センター|臨海|埋立|(テクノ|リサーチ|ビジネス|インダストリアル|サイエンス)パーク/
+// Never suitable, whatever the land is tagged as.
+const EXCLUDED = /原子力|原発|核燃料|放射性/
 const OCCUPIED = /発電所|原子力|製鉄|製油|精油|コンビナート|工場|製作所|試験場|研究所|変電所|基地|処理場|処分場|清掃|浄水|事業所|製造所|株式会社|㈱|\(株\)/
 const OCCUPIED_TAGS = ['power', 'industrial', 'operator', 'man_made']
 
 export function landStatus(type, tags) {
   const name = tags.name ?? tags['name:ja'] ?? ''
+  if (EXCLUDED.test(name)) return 'occupied'
   if (type === 'brownfield' || FORMER.test(name) || tags.disused || tags.abandoned) return 'former'
   if (type === 'greenfield') return 'vacant'
   if (PARK.test(name) && !OCCUPIED.test(name)) return 'park'

@@ -1,10 +1,10 @@
 {
   "region": "japan",
-  "scannedAt": "2026-10-18T20:55:59.965Z",
+  "scannedAt": "2026-10-25T21:02:06.621Z",
   "source": "OpenStreetMap contributors (ODbL), via Geofabrik",
   "counts": {
-    "sites": 10251,
-    "newSites": 0,
+    "sites": 10257,
+    "newSites": 7,
     "substations": 5226,
     "lines": 27571
   }
